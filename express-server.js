@@ -12,6 +12,10 @@ app.get('/', (req, res) => {
   res.send('Welcome to the homepage!');
 });
 
+app.get('/urls.json', (req, res) => {
+  res.json(urLDatabase);
+});
+
 app.listen(port, () => {
   console.log(`you are listening on port ${port}`);
 });
