@@ -21,7 +21,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const templateVars = { urlDatabase }; 
+  const templateVars = { urls: urlDatabase }; 
   res.render('urls_index', templateVars);
 });
 
@@ -30,10 +30,9 @@ app.get('/urls/new', (req, res) => {
 });
 
 app.post('/urls', (req, res) => {
-  console.log(req.body);
   let temp = generateRandomString();
-  urlDatabase[temp] = req.body.longURL; // You need to save that generateRandomSring() output to a variable
-  res.redirect(`/urls/${temp}`); // Then put your variable here
+  urlDatabase[temp] = req.body.longURL; 
+  res.redirect(`/urls/${temp}`); 
 });
 
 app.get("/urls/:id", (req, res) => {
