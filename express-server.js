@@ -31,13 +31,20 @@ app.get('/urls/new', (req, res) => {
 
 app.post('/urls', (req, res) => {
   console.log(req.body);
-  res.send('ok, sure...you got it! definitely.');
+  let temp = generateRandomString()
+  urlDatabase[temp] = req.body.longURL; // You need to save that generateRandomSring() output to a variable
+  res.redirect(`/urls/${temp}`); // Then put your variable here
 });
 
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   res.render("urls_show", templateVars);
 });
+
+app.get(`/u/:id`, (req, res) => {
+  const longURL = urlDatabase[req.params.id];
+  res.redirect(longURL);
+})
 
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
