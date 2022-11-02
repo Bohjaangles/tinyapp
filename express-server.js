@@ -2,6 +2,8 @@
 const express = require('express');
 const app = express();
 const port = 8080;
+const cookieParser = require('cookie-parser');
+const { signedCookie } = require('cookie-parser');
 
 app.set('view engine', 'ejs');
 
@@ -15,18 +17,31 @@ const urlDatabase = {
 };
 
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+app.post('/login', (req, res) => {
+  // req.body is already an object here>>> {username: 'whateveristypedinthesubmissionbox'}
+  res.cookie('username', req.body.username);
+  res.redirect('/urls');
+})
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('username');
+  res.redirect('/urls');
+})
 
 app.get('/', (req, res) => {
-  res.send('Welcome to the homepage!');
+  res.redirect('/urls');
 });
 
 app.get('/urls', (req, res) => {
-  const templateVars = { urls: urlDatabase }; 
+  const templateVars = { urls: urlDatabase, username: req.cookies['username'] }; 
   res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => {
-  res.render('urls_new');
+  const templateVars = { username: req.cookies['username'] };
+  res.render('urls_new', templateVars);
 });
 
 app.post('/urls', (req, res) => {
@@ -36,7 +51,7 @@ app.post('/urls', (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies['username'] };
   res.render("urls_show", templateVars);
 });
 
