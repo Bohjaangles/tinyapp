@@ -6,7 +6,7 @@ const cookieParser = require('cookie-parser');
 const { signedCookie } = require('cookie-parser');
 const morgan = require('morgan');
 
-//
+// 
 // MISC functions and essentials
 //
 
@@ -19,7 +19,6 @@ const generateRandomString = () => {
 // looks through an object for of users for an object whose email key matches the target email
 const getUserByEmail = (targetEmail, usersObj) => {
   for (const user in usersObj) {
-    console.log(user, 'line 22');
     if (targetEmail === usersObj[user].email) {
       return true;
     }
@@ -63,30 +62,34 @@ app.get('/register', (req, res) => {
   return res.render('urls_register', templateVars);
 });
 
+
 app.post('/register', (req, res) => {
-  let temp = generateRandomString();
-  users[temp] = { id: temp, email: req.body.email, password: req.body.password };
-  if (users[temp].email === '' || users[temp].password === '') {
+  let randomID = generateRandomString();
+  
+  if (req.body.email === '' || req.body.password === '') {
     res.send('404 - input feilds require inputs');
-    setTimeout(res.redirect('register'), 3000);
   }
-  if (getUserByEmail(users[temp].email, users)) {
+  
+  if (getUserByEmail(req.body.email, users)) {
     res.send('404 - email already registered, redirecting to login');
-    setTimeout(res.redirect('login'), 3000);
   }
+
+  users[randomID] = { id: randomID, email: req.body.email, password: req.body.password };
   // currentUser = users[req.cookie.user_id];
   // const templateVars = { users: currentUser };
-  res.cookie('user_id', temp);
+  res.cookie('user_id', randomID);
   return res.redirect('/urls');
 });
 
 app.post('/login', (req, res) => {
-  //res.cookie('user_id', req.body.id); 
+
   return res.redirect('/urls');
 });
 
 app.get('/login', (req, res) => {
-  return res.render('login')
+  const currentUser = users[req.cookies.user_id]
+  let templateVars = {user: currentUser} 
+  return res.render('login', templateVars)
 });
 
 app.post('/logout', (req, res) => {

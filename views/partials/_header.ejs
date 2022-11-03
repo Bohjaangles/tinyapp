@@ -3,7 +3,7 @@
     <a class="navbar-brand" href="/urls">TinyApp</a>
     <button
       class="navbar-toggler"
-      type="button"
+      type="button" 
       data-toggle="collapse"
       data-target="#navbarNavAltMarkup"
       aria-controls="navbarNavAltMarkup"
@@ -20,10 +20,10 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
-      <%if (user) { %>
+      <% if (user) { %>
         <h5 style="margin-right: 0.5em;">
-        <%= user['email']  %>
-      </h5>
+          <%= user['email']  %>
+        </h5>
       
       <form action="/logout" method="POST">
         <button type="submit" class="btn btn-primary">Logout
@@ -32,8 +32,8 @@
         <% } else { %>
             <a href="/login">
               <button type="submit" class="btn btn-primary">Login
-            </button>
-          </a>
+              </button>
+            </a>
           <h5 style="margin-right: 0.5em;"></h5>
             <a href="/register">
               <button type="submit" class="btn btn-primary">Register
