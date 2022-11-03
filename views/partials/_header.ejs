@@ -20,9 +20,9 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
-      <%if ( username ) { %>
+      <%if (users[email]) { %>
         <h5 style="margin-right: 0.5em;">
-        <%= username  %>
+        <%= users[email]  %>
       </h5>
       <form action="/logout" method="POST">
         <button type="submit" class="btn btn-primary">Logout
@@ -30,7 +30,8 @@
       </form>
         <% } else { %>
           <form action="/login" method="POST">
-            <input type="text" name="username"/>
+            <input type="text" name="email"/>
+            <input type="password" name="password"/>
             <button type="submit" class="btn btn-primary">Login
             </button>
           </form>
