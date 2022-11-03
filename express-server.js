@@ -67,6 +67,10 @@ const urlDatabase = {
   "9sm5xK": {
     longURL: "http://www.google.com",
     userID: '1t55sw'
+  },
+  "9fd3Gt": {
+    longURL: 'https://www.yahoo.com',
+    userID: '2g44ws'
   }
 };
 
@@ -75,7 +79,13 @@ const users = {
     id: '1t55sw',
     email: 'a@b.c',
     password: '123'
+  },
+  '2g44ws': {
+    id: '2g44ws',
+    email: 'c@b.a',
+    password: '321'
   }
+
 };
 
 //
@@ -159,6 +169,11 @@ app.get('/', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
+  if (!req.cookies.user_id) {
+    const errorMsg = 'must be logged in to view this content';
+    let templateVars = { error: errorMsg, user: undefined};
+    return res.render('error', templateVars);
+  }
   const currentUser = users[req.cookies.user_id];
   let filtered = urlsForUser(req.cookies.user_id, urlDatabase);
   let templateVars = { urls: filtered, user: currentUser }; // replace database with filtered database
@@ -193,6 +208,17 @@ app.post('/urls', (req, res) => {
 
 // for get, use req.params / vs post uses req.body
 app.get("/urls/:id", (req, res) => {
+  if (!req.cookies.user_id) {
+    const errorMsg = 'Must be logged in to view this content';
+    const templateVars = { error: errorMsg, user: undefined};
+    return res.render('error', templateVars);
+  }
+  if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+    const errorMsg = 'can only view content associated with your account';
+    const templateVars = { error: errorMsg, user: req.cookies.user_id };
+    return res.render('error', templateVars);
+  }
+  
   const currentUser = users[req.cookies.user_id];
   const templateVars = { user: currentUser, urlInfo: urlDatabase[req.params.id], shortUrlId: req.params.id };
   // console.log('urlinfo', `${JSON.stringify(req.params.id)}`);
@@ -200,6 +226,11 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post('/urls/:id/delete', (req, res) => {
+  if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+    const errorMsg = 'can only view/manipulate content associated with your account';
+    const templateVars = { error: errorMsg, user: req.cookies.user_id };
+    return res.render('error', templateVars);
+  }
   if (req.cookies.user_id) {
     delete urlDatabase[req.params.id];
   }
@@ -220,12 +251,16 @@ app.post('/urls/:id', (req, res) => {
 });
 
 app.get(`/u/:id`, (req, res) => {
+  if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+    const errorMsg = 'can only view content associated with your account';
+    const templateVars = { error: errorMsg, user: req.cookies.user_id };
+    return res.render('error', templateVars);
+  }
   if (!urlDatabase[req.params.id]){
     const errorMsg = 'this short url does not exist, please check spelling, or try again';
     let templateVars = { error: errorMsg, user: (req.cookies.user_id ? req.cookies.user_id : undefined )}
-    res.render('error', templateVars);
+    return res.render('error', templateVars);
   }
-  
   const longURL = urlDatabase[req.params.id].longURL;
   return res.redirect(longURL);
 });
