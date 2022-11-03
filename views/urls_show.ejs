@@ -16,15 +16,15 @@
     <div class="card text-center">
       <div class="card-header"></div>
       <div class="card-body">
-        <h5 class="card-title">TinyURL for: <%= longURL %></h5>
+        <h5 class="card-title">TinyURL for: <%= urlInfo.longURL %></h5>
         <p class="card-text">
-          Short URL ID: <a href="/u/<%= id %>"><%= id %></a>
+          Short URL ID: <a href="//<%= urlInfo.longURL %>"><%= shortUrlId %></a>
         </p>
-       
+       <!-- for href, to link directly to somewhere, outside of our stuff, double slash '//'-->
       </div>
       <div class="card-footer text-muted">
         <h6 class="card-title">Edit URL:</h6>
-        <form method="POST" action="/urls/<%= id %>">
+        <form method="POST" action="/urls/<%= shortUrlId %>">
           <input type='text' name="longURL" />
           <button type="submit" class="'btn btn-info">Make Edits</button>
         </form>
