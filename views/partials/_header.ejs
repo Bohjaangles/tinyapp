@@ -20,21 +20,25 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
-      <%if (users[email]) { %>
+      <%if (user) { %>
         <h5 style="margin-right: 0.5em;">
-        <%= users[email]  %>
+        <%= user['email']  %>
       </h5>
+      
       <form action="/logout" method="POST">
         <button type="submit" class="btn btn-primary">Logout
         </button>
       </form>
         <% } else { %>
-          <form action="/login" method="POST">
-            <input type="text" name="email"/>
-            <input type="password" name="password"/>
-            <button type="submit" class="btn btn-primary">Login
+            <a href="/login">
+              <button type="submit" class="btn btn-primary">Login
             </button>
-          </form>
-          <% } %>
+          </a>
+          <h5 style="margin-right: 0.5em;"></h5>
+            <a href="/register">
+              <button type="submit" class="btn btn-primary">Register
+            </button>
+          </a>
+          <% } %>   
   </nav>
 </header>
