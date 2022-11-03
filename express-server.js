@@ -6,11 +6,26 @@ const cookieParser = require('cookie-parser');
 const { signedCookie } = require('cookie-parser');
 const morgan = require('morgan');
 
+//
+// MISC functions and essentials
+//
+
 app.set('view engine', 'ejs');
 
 const generateRandomString = () => {
   return Math.random().toString(36).slice(2, 8);
 };
+
+// looks through an object for of users for an object whose email key matches the target email
+const getUserByEmail = (targetEmail, usersObj) => {
+  for (const user in usersObj) {
+    console.log(user, 'line 22');
+    if (targetEmail === usersObj[user].email) {
+      return true;
+    }
+  }
+  return false;
+}
 
 //
 // DATABASE
@@ -32,9 +47,7 @@ const users = {
 //
 // MIDDLEWARE
 //
-app.use(morgan('dev', {
-  skip: function(req, res) { return res.statusCode < 400; }
-}));
+app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -53,6 +66,14 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   let temp = generateRandomString();
   users[temp] = { id: temp, email: req.body.email, password: req.body.password };
+  if (users[temp].email === '' || users[temp].password === '') {
+    res.send('404 - input feilds require inputs');
+    setTimeout(res.redirect('register'), 3000);
+  }
+  if (getUserByEmail(users[temp].email, users)) {
+    res.send('404 - email already registered, redirecting to login');
+    setTimeout(res.redirect('login'), 3000);
+  }
   // currentUser = users[req.cookie.user_id];
   // const templateVars = { users: currentUser };
   res.cookie('user_id', temp);
