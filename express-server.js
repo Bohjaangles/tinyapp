@@ -17,13 +17,31 @@ const generateRandomString = () => {
 };
 
 // looks through an object for of users for an object whose email key matches the target email
-const getUserByEmail = (targetEmail, usersObj) => {
+const validateEmail = (targetEmail, usersObj) => {
   for (const user in usersObj) {
     if (targetEmail === usersObj[user].email) {
       return true;
     }
   }
   return false;
+}
+
+const validatePW = (targetPW, usersObj) => {
+  for (const user in usersObj) {
+    if (targetPW === usersObj[user].password) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const getUserByEmail = (email, usersObj) => {
+  for (const user in usersObj) {
+    if (email === usersObj[user].email) {
+      return user;
+    }
+  }
+  return;
 }
 
 //
@@ -39,7 +57,7 @@ const users = {
   '1t55sw': {
     id: '1t55sw',
     email: 'a@b.c',
-    password: 123
+    password: '123'
   }
 };
 
@@ -67,11 +85,11 @@ app.post('/register', (req, res) => {
   let randomID = generateRandomString();
   
   if (req.body.email === '' || req.body.password === '') {
-    res.send('404 - input feilds require inputs');
+    res.send('404');
   }
   
-  if (getUserByEmail(req.body.email, users)) {
-    res.send('404 - email already registered, redirecting to login');
+  if (validateEmail(req.body.email, users)) {
+    res.send('404');
   }
 
   users[randomID] = { id: randomID, email: req.body.email, password: req.body.password };
@@ -82,7 +100,16 @@ app.post('/register', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-
+  
+  if (!validateEmail(req.body.email, users)) {
+    res.send(' 403 ');
+  }
+  if (!validatePW(req.body.password, users)) {
+    res.send('403');
+  }
+  let userID = getUserByEmail(req.body.email, users);
+  
+  res.cookie('user_id', userID)  
   return res.redirect('/urls');
 });
 
@@ -94,8 +121,12 @@ app.get('/login', (req, res) => {
 
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
-  return res.redirect('/urls');
+  return res.redirect('/login');
 });
+
+//  USER LOGIN / REGISTRATION ^^^
+//
+// APP FUNCTIONALITY VVV
 
 app.get('/', (req, res) => {
   return res.redirect('/urls');
