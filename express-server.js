@@ -176,17 +176,18 @@ app.get('/urls/new', (req, res) => {
 });
 
 app.post('/urls', (req, res) => {
-
+  if (!req.cookies.user_id){
+    const errorMsg = 'Must be logged in to shorten urls';
+    templateVars = { error: errorMsg, user: undefined};
+    return res.render('error', templateVars);
+  }
   let randomID = generateRandomString();
   if (req.cookies.user_id) {
     urlDatabase[randomID] = {
       longURL: req.body.longURL,
       userID: req.cookies.user_id
     };
-  }
-
-  // let temp = generateRandomString();
-  // urlDatabase[temp] = req.body.longURL;
+  };
   return res.redirect(`/urls/${randomID}`);
 });
 
@@ -219,13 +220,25 @@ app.post('/urls/:id', (req, res) => {
 });
 
 app.get(`/u/:id`, (req, res) => {
-  const longURL = urlDatabase[req.params.id];
+  if (!urlDatabase[req.params.id]){
+    const errorMsg = 'this short url does not exist, please check spelling, or try again';
+    let templateVars = { error: errorMsg, user: (req.cookies.user_id ? req.cookies.user_id : undefined )}
+    res.render('error', templateVars);
+  }
+  
+  const longURL = urlDatabase[req.params.id].longURL;
   return res.redirect(longURL);
 });
 
 app.get('/urls.json', (req, res) => {
   return res.json(urlDatabase);
 });
+
+app.get('/error', (req, res) => {
+  const currentUser = users[req.cookies.user_id];
+  const templateVars = { user: currentUser }
+  return res.render('error', templateVars);
+})
 
 //
 // .......................IT LISTENS...
