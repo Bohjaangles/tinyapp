@@ -26,6 +26,3 @@ describe('getUserByEmail', function() {
     assert.isUndefined(user);
   });
 });
-
-
-// ./node_modules/mocha/bin/mocha"

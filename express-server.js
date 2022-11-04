@@ -2,61 +2,16 @@
 const express = require('express');
 const app = express();
 const port = 8080;
-const cookieParser = require('cookie-parser');
-const { signedCookie } = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const morgan = require('morgan');
 const bcrypt = require("bcryptjs");
+const { urlsForUser, getUserByEmail, validatePW, validateEmail, generateRandomString } = require('./helpers.js');
 
 // 
 // ********   MISC functions and essentials
 //
-const salt = bcrypt.genSaltSync();
 
-app.set('view engine', 'ejs');
-
-const generateRandomString = () => {
-  return Math.random().toString(36).slice(2, 8);
-};
-
-// looks through an object for of users for an object whose email key matches the target email
-const validateEmail = (targetEmail, usersObj) => {
-  for (const user in usersObj) {
-    if (targetEmail === usersObj[user].email) {
-      return true;
-    }
-  }
-  return false;
-};
-
-const validatePW = (targetPW, usersObj) => {
-  for (const user in usersObj) {
-    bcrypt.compareSync(targetPW, usersObj[user].password)
-    if (bcrypt.compareSync(targetPW, usersObj[user].password)) {
-      return true;
-    }
-  }
-  return false;
-};
-
-const getUserByEmail = (email, usersObj) => {
-  for (const user in usersObj) {
-    if (email === usersObj[user].email) {
-      return user;
-    }
-  }
-  return;
-};
-
-const urlsForUser = (userid, database) => {
-  let filterdDB = {};
-  for (const data in database) {
-    if (database[data].userID === userid){
-      filterdDB[data] = database[data]
-    }
-  }
-  return filterdDB;
-};
-
+app.set('view engine', 'ejs'); // this guy just likes being here :)
 
 //
 //                                     VVVVV--------> DATABASE(s) <--------VVVVV
@@ -88,7 +43,6 @@ const users = {
     email: 'c@b.a',
     password: bcrypt.hashSync('321')
   }
-
 };
 
 //
@@ -96,7 +50,10 @@ const users = {
 //
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['VerySecretSauce'],
+}));
 
 //
 //                                   ~~~~~~~~~~~~~ALL THE ROUTES~~~~~~~~~~~~~
@@ -105,10 +62,10 @@ app.use(cookieParser());
 //
 
 app.get('/register', (req, res) => {
-  if (req.cookies.user_id) {
+  if (req.session.user_id) {
     return res.redirect('/urls');
   }
-  let templateVars = { user: undefined}
+  let templateVars = { user: undefined };
   return res.render('urls_register', templateVars);
 });
 
@@ -126,7 +83,7 @@ app.post('/register', (req, res) => {
   let hashed = bcrypt.hashSync(req.body.password);
   users[randomID] = { id: randomID, email: req.body.email, password: hashed };
 
-  res.cookie('user_id', randomID);
+  req.session.user_id = randomID;
   return res.redirect('/urls');
 });
 
@@ -136,11 +93,11 @@ app.post('/register', (req, res) => {
 
 
 app.get('/login', (req, res) => {
-  if (req.cookies.user_id) {
+  if (req.session.user_id) {
     return res.redirect('/urls');
   }
 
-  const currentUser = users[req.cookies.user_id];
+  const currentUser = users[req.session.user_id];
   let templateVars = { user: currentUser };
   return res.render('login', templateVars);
 });
@@ -155,12 +112,12 @@ app.post('/login', (req, res) => {
   }
   let userID = getUserByEmail(req.body.email, users);
 
-  res.cookie('user_id', userID);
+  req.session.user_id = userID;
   return res.redirect('/urls');
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   return res.redirect('/login');
 });
 
@@ -173,38 +130,37 @@ app.get('/', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     const errorMsg = 'must be logged in to view this content';
-    let templateVars = { error: errorMsg, user: undefined};
+    let templateVars = { error: errorMsg, user: undefined };
     return res.render('error', templateVars);
   }
-  const currentUser = users[req.cookies.user_id];
-  let filtered = urlsForUser(req.cookies.user_id, urlDatabase);
-  let templateVars = { urls: filtered, user: currentUser }; // replace database with filtered database
-  // req.cookies - gives object value of the cookie(s)
+  const currentUser = users[req.session.user_id];
+  let filtered = urlsForUser(req.session.user_id, urlDatabase);
+  let templateVars = { urls: filtered, user: currentUser }; // replace database with filtered database for user permissions
   return res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => {
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     return res.redirect('/login');
   }
-  const currentUser = users[req.cookies.user_id];
+  const currentUser = users[req.session.user_id];
   const templateVars = { user: currentUser };
   return res.render('urls_new', templateVars);
 });
 
 app.post('/urls', (req, res) => {
-  if (!req.cookies.user_id){
+  if (!req.session.user_id) {
     const errorMsg = 'Must be logged in to shorten urls';
-    templateVars = { error: errorMsg, user: undefined};
+    templateVars = { error: errorMsg, user: undefined };
     return res.render('error', templateVars);
   }
   let randomID = generateRandomString();
-  if (req.cookies.user_id) {
+  if (req.session.user_id) {
     urlDatabase[randomID] = {
       longURL: req.body.longURL,
-      userID: req.cookies.user_id
+      userID: req.session.user_id
     };
   };
   return res.redirect(`/urls/${randomID}`);
@@ -212,57 +168,60 @@ app.post('/urls', (req, res) => {
 
 // for get, use req.params / vs post uses req.body
 app.get("/urls/:id", (req, res) => {
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     const errorMsg = 'Must be logged in to view this content';
-    const templateVars = { error: errorMsg, user: undefined};
+    const templateVars = { error: errorMsg, user: undefined };
     return res.render('error', templateVars);
   }
-  if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+
+  if (urlDatabase[req.params.id].userID !== req.session.user_id) {
     const errorMsg = 'can only view content associated with your account';
-    const templateVars = { error: errorMsg, user: req.cookies.user_id };
+    const templateVars = { error: errorMsg, user: req.session.user_id };
     return res.render('error', templateVars);
   }
-  
-  const currentUser = users[req.cookies.user_id];
+
+  const currentUser = users[req.session.user_id];
   const templateVars = { user: currentUser, urlInfo: urlDatabase[req.params.id], shortUrlId: req.params.id };
-  // console.log('urlinfo', `${JSON.stringify(req.params.id)}`);
   return res.render("urls_show", templateVars);
 });
 
+app.post('/urls/:id', (req, res) => {
+  if (req.session.user_id) {
+    urlDatabase[req.params.id] = {
+      longURL: req.body.longURL,
+      userID: req.session.user_id
+    };
+    return res.redirect('/urls');
+  }
+  return res.redirect('/register');
+});
+
 app.post('/urls/:id/delete', (req, res) => {
-  if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+  if (!req.session.user_id) {
     const errorMsg = 'can only view/manipulate content associated with your account';
-    const templateVars = { error: errorMsg, user: req.cookies.user_id };
+    const templateVars = { error: errorMsg, user: req.session.user_id };
     return res.render('error', templateVars);
   }
-  if (req.cookies.user_id) {
+  if (urlDatabase[req.params.id].userID !== req.session.user_id) {
+    const errorMsg = 'can only view/manipulate content associated with your account';
+    const templateVars = { error: errorMsg, user: req.session.user_id };
+    return res.render('error', templateVars);
+  }
+  if (req.session.user_id) {
     delete urlDatabase[req.params.id];
   }
   return res.redirect('/urls');
 });
 
-app.post('/urls/:id', (req, res) => {
-  if (req.cookies.user_id) {
-    // urlDatabase[req.params.id] = {
-    //   longURL: req.body.longURL,
-    //   userID: req.cookies.user_id
-    return res.redirect('/urls');
-  }
-
-
-
-  return res.redirect('/register');
-});
-
 app.get(`/u/:id`, (req, res) => {
-  if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+  if (urlDatabase[req.params.id].userID !== req.session.user_id) {
     const errorMsg = 'can only view content associated with your account';
-    const templateVars = { error: errorMsg, user: req.cookies.user_id };
+    const templateVars = { error: errorMsg, user: req.session.user_id };
     return res.render('error', templateVars);
   }
-  if (!urlDatabase[req.params.id]){
+  if (!urlDatabase[req.params.id]) {
     const errorMsg = 'this short url does not exist, please check spelling, or try again';
-    let templateVars = { error: errorMsg, user: (req.cookies.user_id ? req.cookies.user_id : undefined )}
+    let templateVars = { error: errorMsg, user: (req.session.user_id ? req.session.user_id : undefined) };
     return res.render('error', templateVars);
   }
   const longURL = urlDatabase[req.params.id].longURL;
@@ -274,10 +233,14 @@ app.get('/urls.json', (req, res) => {
 });
 
 app.get('/error', (req, res) => {
-  const currentUser = users[req.cookies.user_id];
-  const templateVars = { user: currentUser }
+  const currentUser = users[req.session.user_id];
+  const templateVars = { user: currentUser };
   return res.render('error', templateVars);
-})
+});
+
+app.get('*', (req, res) => {
+  res.redirect('/urls');
+});
 
 //
 // .......................IT LISTENS...
