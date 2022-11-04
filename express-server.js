@@ -5,10 +5,12 @@ const port = 8080;
 const cookieParser = require('cookie-parser');
 const { signedCookie } = require('cookie-parser');
 const morgan = require('morgan');
+const bcrypt = require("bcryptjs");
 
 // 
 // ********   MISC functions and essentials
 //
+const salt = bcrypt.genSaltSync();
 
 app.set('view engine', 'ejs');
 
@@ -28,7 +30,8 @@ const validateEmail = (targetEmail, usersObj) => {
 
 const validatePW = (targetPW, usersObj) => {
   for (const user in usersObj) {
-    if (targetPW === usersObj[user].password) {
+    bcrypt.compareSync(targetPW, usersObj[user].password)
+    if (bcrypt.compareSync(targetPW, usersObj[user].password)) {
       return true;
     }
   }
@@ -78,12 +81,12 @@ const users = {
   '1t55sw': {
     id: '1t55sw',
     email: 'a@b.c',
-    password: '123'
+    password: bcrypt.hashSync('123')
   },
   '2g44ws': {
     id: '2g44ws',
     email: 'c@b.a',
-    password: '321'
+    password: bcrypt.hashSync('321')
   }
 
 };
@@ -105,7 +108,8 @@ app.get('/register', (req, res) => {
   if (req.cookies.user_id) {
     return res.redirect('/urls');
   }
-  return res.render('urls_register');
+  let templateVars = { user: undefined}
+  return res.render('urls_register', templateVars);
 });
 
 
@@ -119,8 +123,8 @@ app.post('/register', (req, res) => {
   if (validateEmail(req.body.email, users)) {
     res.send('404');
   }
-
-  users[randomID] = { id: randomID, email: req.body.email, password: req.body.password };
+  let hashed = bcrypt.hashSync(req.body.password);
+  users[randomID] = { id: randomID, email: req.body.email, password: hashed };
 
   res.cookie('user_id', randomID);
   return res.redirect('/urls');
