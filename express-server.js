@@ -104,11 +104,10 @@ app.get('/login', (req, res) => {
 
 app.post('/login', (req, res) => {
 
-  if (!validateEmail(req.body.email, users)) {
-    res.send(' 403 ');
-  }
-  if (!validatePW(req.body.password, users)) {
-    res.send('403');
+  if (!validateEmail(req.body.email, users) || !validatePW(req.body.password, users)) {
+    const errorMsg = 'Invalid email or password. Please try again!';
+    let templateVars = { error: errorMsg, user: undefined };
+    return res.render('error', templateVars);
   }
   let userID = getUserByEmail(req.body.email, users);
 
@@ -126,7 +125,10 @@ app.post('/logout', (req, res) => {
 // ======================================== APP FUNCTIONALITY VVV
 
 app.get('/', (req, res) => {
-  return res.redirect('/register');
+  if (req.session.user_id) {
+    return res.redirect('/urls')
+  }
+  return res.redirect('/login');
 });
 
 app.get('/urls', (req, res) => {

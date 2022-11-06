@@ -1,7 +1,5 @@
 const bcrypt = require("bcryptjs");
 const cookieSession = require('cookie-session');
-const { signedCookie } = require('cookie-parser');
-const cookieParser = require('cookie-parser');
 
 
 const generateRandomString = () => {
@@ -37,6 +35,7 @@ const getUserByEmail = (email, usersObj) => {
   return;
 };
 
+// Function for use in ensuring that user permissions are followed in repect to specific content when called
 const urlsForUser = (userid, database) => {
   let filterdDB = {};
   for (const data in database) {
