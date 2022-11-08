@@ -1,5 +1,4 @@
 const bcrypt = require("bcryptjs");
-const cookieSession = require('cookie-session');
 
 
 const generateRandomString = () => {
